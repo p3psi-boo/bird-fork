@@ -16,7 +16,12 @@ export const SETTINGS_NAME_REGEX = /"name":"([^"\\]*(?:\\.[^"\\]*)*)"/;
 export const FALLBACK_QUERY_IDS = {
   CreateTweet: 'TAJw1rBsjAtdNgTdlo2oeg',
   CreateRetweet: 'ojPdsZsimiJrUGLR1sjUtA',
+  DeleteRetweet: 'iQtK4dl5hBmXewYZuEOKVw',
+  CreateFriendship: '8h9JVdV8dlSyqyRDJEPCsA',
+  DestroyFriendship: 'ppXWuagMNXgvzx6WoXBW0Q',
   FavoriteTweet: 'lI07N6Otwv1PhnEgXILM7A',
+  UnfavoriteTweet: 'ZYKSe-w7KEslx3JhSIk5LA',
+  CreateBookmark: 'aoDbu3RHznuiSkQ9aNM67Q',
   DeleteBookmark: 'Wlmlj2-xzyS1GN3a6cj-mQ',
   TweetDetail: '97JF30KziU00483E_8elBA',
   SearchTimeline: 'M1jEez78PEfVfbQLvlWMvQ',
@@ -37,6 +42,7 @@ export const FALLBACK_QUERY_IDS = {
   ExplorePage: 'kheAINB_4pzRDqkzG3K-ng',
   GenericTimelineById: 'uGSr7alSjR9v6QJAIaqSKQ',
   TrendHistory: 'Sj4T-jSB9pr0Mxtsc1UKZQ',
+  AboutAccountQuery: 'zs_jFPFT78rBpXv9Z3U2YQ',
 } as const;
 
 export type OperationName = keyof typeof FALLBACK_QUERY_IDS;

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0 — 2026-01-19
+
+### Added
+- `bookmarks` thread expansion controls (`--expand-root-only`, `--author-chain`, `--author-only`, `--full-chain-only`, `--include-ancestor-branches`, `--include-parent`, `--thread-meta`, `--sort-chronological`) for richer context exports (#55) — thanks @kkretschmer2.
+- `--chrome-profile-dir` to point at Chromium profile directories or cookie DB files (Arc/Brave/etc) for cookie extraction (#16) — thanks @tekumara.
+- `about` command to report account origin/location metadata (#51) — thanks @pjtf93.
+- `follow`/`unfollow` commands to manage follows (#54) — thanks @citizenlee.
+- Twitter client now supports like/unlike/retweet/unretweet/bookmark via the engagement mixin (#53) — thanks @the-vampiire.
+
+### Fixed
+- `bookmarks` expanded JSON now preserves pagination `nextCursor`, and full-chain filtering only includes ancestor branches when requested.
+- Follow/unfollow REST fallback now supports cursor pagination for followers/following (#54).
+- About account live coverage now verifies data extraction paths (#51) — thanks @pjtf93.
+
+### Tests
+- Live tests now exercise engagement mutations (opt-in) (#53) — thanks @the-vampiire.
+
 ## 0.7.0 — 2026-01-12
 
 ### Added

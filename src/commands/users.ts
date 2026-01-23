@@ -1,7 +1,28 @@
 import type { Command } from 'commander';
 import type { CliContext } from '../cli/shared.js';
+import { normalizeHandle } from '../lib/normalize-handle.js';
 import { TwitterClient } from '../lib/twitter-client.js';
-import type { TwitterUser } from '../lib/twitter-client-types.js';
+import type { AboutAccountProfile, TwitterUser } from '../lib/twitter-client-types.js';
+
+function formatAboutProfile(profile: AboutAccountProfile, ctx: CliContext, handle: string): string[] {
+  const lines: string[] = [`${ctx.p('info')}Account information for @${handle}:`];
+  if (profile.accountBasedIn) {
+    lines.push(`  Account based in: ${profile.accountBasedIn}`);
+  }
+  if (profile.createdCountryAccurate !== undefined) {
+    lines.push(`  Creation country accurate: ${profile.createdCountryAccurate ? 'Yes' : 'No'}`);
+  }
+  if (profile.locationAccurate !== undefined) {
+    lines.push(`  Location accurate: ${profile.locationAccurate ? 'Yes' : 'No'}`);
+  }
+  if (profile.source) {
+    lines.push(`${ctx.l('source')}${profile.source}`);
+  }
+  if (profile.learnMoreUrl) {
+    lines.push(`  Learn more: ${profile.learnMoreUrl}`);
+  }
+  return lines;
+}
 
 type PagedUsersResult = {
   success: boolean;
@@ -310,6 +331,49 @@ export function registerUserCommands(program: Command, ctx: CliContext): void {
         console.log(`${ctx.l('credentials')}${credentialSource}`);
       } else {
         console.error(`${ctx.p('err')}Failed to determine current user: ${result.error ?? 'Unknown error'}`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('about')
+    .description('Get account origin and location information for a user')
+    .argument('<username>', 'Twitter username (with or without @)')
+    .option('--json', 'Output as JSON')
+    .action(async (username: string, cmdOpts: { json?: boolean }) => {
+      const opts = program.opts();
+      const timeoutMs = ctx.resolveTimeoutFromOptions(opts);
+      const normalizedHandle = normalizeHandle(username);
+
+      if (!normalizedHandle) {
+        console.error(`${ctx.p('err')}Invalid username: ${username}`);
+        process.exit(1);
+      }
+
+      const { cookies, warnings } = await ctx.resolveCredentialsFromOptions(opts);
+
+      for (const warning of warnings) {
+        console.error(`${ctx.p('warn')}${warning}`);
+      }
+
+      if (!cookies.authToken || !cookies.ct0) {
+        console.error(`${ctx.p('err')}Missing required credentials`);
+        process.exit(1);
+      }
+
+      const client = new TwitterClient({ cookies, timeoutMs });
+      const result = await client.getUserAboutAccount(normalizedHandle);
+
+      if (result.success && result.aboutProfile) {
+        if (cmdOpts.json) {
+          console.log(JSON.stringify(result.aboutProfile, null, 2));
+        } else {
+          for (const line of formatAboutProfile(result.aboutProfile, ctx, normalizedHandle)) {
+            console.log(line);
+          }
+        }
+      } else {
+        console.error(`${ctx.p('err')}Failed to fetch account information: ${result.error ?? 'Unknown error'}`);
         process.exit(1);
       }
     });

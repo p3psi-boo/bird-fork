@@ -10,7 +10,12 @@ import path from 'node:path';
 const TARGET_OPERATIONS = [
   'CreateTweet',
   'CreateRetweet',
+  'DeleteRetweet',
+  'CreateFriendship',
+  'DestroyFriendship',
   'FavoriteTweet',
+  'UnfavoriteTweet',
+  'CreateBookmark',
   'DeleteBookmark',
   'TweetDetail',
   'SearchTimeline',
@@ -23,6 +28,7 @@ const TARGET_OPERATIONS = [
   'ExplorePage',
   'GenericTimelineById',
   'TrendHistory',
+  'AboutAccountQuery',
 ] as const;
 
 type OperationName = (typeof TARGET_OPERATIONS)[number];

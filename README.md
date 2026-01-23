@@ -59,6 +59,7 @@ bird bookmarks -n 5
 bird bookmarks --folder-id 123456789123456789 -n 5 # https://x.com/i/bookmarks/<folder-id>
 bird bookmarks --all --json
 bird bookmarks --all --max-pages 2 --json
+bird bookmarks --include-parent --json
 bird unbookmark 1234567890123456789
 bird unbookmark https://x.com/user/status/1234567890123456789
 
@@ -146,6 +147,22 @@ const sportsNews = await client.getNews(10, {
 });
 ```
 
+Account details (About profile):
+
+```ts
+const aboutResult = await client.getUserAboutAccount('steipete');
+if (aboutResult.success && aboutResult.aboutProfile) {
+  console.log(aboutResult.aboutProfile.accountBasedIn);
+}
+```
+
+Fields:
+- `accountBasedIn`
+- `source`
+- `createdCountryAccurate`
+- `locationAccurate`
+- `learnMoreUrl`
+
 ## Commands
 
 - `bird tweet "<text>"` — post a new tweet.
@@ -160,7 +177,7 @@ const sportsNews = await client.getNews(10, {
 - `bird search "<query>" [-n count] [--all] [--max-pages n] [--cursor string] [--json]` — search for tweets matching a query; `--max-pages` requires `--all` or `--cursor`.
 - `bird mentions [-n count] [--user @handle] [--json]` — find tweets mentioning a user (defaults to the authenticated user).
 - `bird user-tweets <@handle> [-n count] [--cursor string] [--max-pages n] [--delay ms] [--json]` — get tweets from a user's profile timeline.
-- `bird bookmarks [-n count] [--folder-id id] [--all] [--max-pages n] [--cursor string] [--json]` — list your bookmarked tweets (or a specific bookmark folder); `--max-pages` requires `--all` or `--cursor`.
+- `bird bookmarks [-n count] [--folder-id id] [--all] [--max-pages n] [--cursor string] [--expand-root-only] [--author-chain] [--author-only] [--full-chain-only] [--include-ancestor-branches] [--include-parent] [--thread-meta] [--sort-chronological] [--json]` — list your bookmarked tweets (or a specific bookmark folder); expansion flags control thread context; `--max-pages` requires `--all` or `--cursor`.
 - `bird unbookmark <tweet-id-or-url...>` — remove one or more bookmarks by tweet ID or URL.
 - `bird likes [-n count] [--all] [--max-pages n] [--cursor string] [--json] [--json-full]` — list your liked tweets; `--max-pages` requires `--all` or `--cursor`.
 - `bird news [-n count] [--ai-only] [--with-tweets] [--tweets-per-item n] [--for-you] [--news-only] [--sports] [--entertainment] [--trending-only] [--json]` — fetch news and trending topics from X's Explore tabs.
@@ -169,14 +186,26 @@ const sportsNews = await client.getNews(10, {
 - `bird list-timeline <list-id-or-url> [-n count] [--all] [--max-pages n] [--cursor string] [--json]` — get tweets from a list timeline; `--max-pages` implies `--all`.
 - `bird following [--user <userId>] [-n count] [--cursor string] [--all] [--max-pages n] [--json]` — list users that you (or another user) follow; `--max-pages` requires `--all`.
 - `bird followers [--user <userId>] [-n count] [--cursor string] [--all] [--max-pages n] [--json]` — list users that follow you (or another user); `--max-pages` requires `--all`.
+- `bird about <@handle> [--json]` — get account origin and location information for a user.
 - `bird whoami` — print which Twitter account your cookies belong to.
 - `bird check` — show which credentials are available and where they were sourced from.
+
+Bookmarks flags:
+- `--expand-root-only`: expand threads only when the bookmark is a root tweet.
+- `--author-chain`: keep only the bookmarked author's connected self-reply chain.
+- `--author-only`: include all tweets from the bookmarked author within the thread.
+- `--full-chain-only`: keep the entire reply chain connected to the bookmarked tweet (all authors).
+- `--include-ancestor-branches`: include sibling branches for ancestors when using `--full-chain-only`.
+- `--include-parent`: include the direct parent tweet for non-root bookmarks.
+- `--thread-meta`: add thread metadata fields to each tweet.
+- `--sort-chronological`: sort output globally oldest to newest (default preserves bookmark order).
 
 Global options:
 - `--auth-token <token>`: set the `auth_token` cookie manually.
 - `--ct0 <token>`: set the `ct0` cookie manually.
 - `--cookie-source <safari|chrome|firefox>`: choose browser cookie source (repeatable; order matters).
-- `--chrome-profile <name>`: Chrome profile for cookie extraction.
+- `--chrome-profile <name>`: Chrome profile name for cookie extraction (e.g., `Default`, `Profile 2`).
+- `--chrome-profile-dir <path>`: Chrome/Chromium profile directory or cookie DB path for cookie extraction.
 - `--firefox-profile <name>`: Firefox profile for cookie extraction.
 - `--cookie-timeout <ms>`: cookie extraction timeout for keychain/OS helpers (milliseconds).
 - `--timeout <ms>`: abort requests after the given timeout (milliseconds).
@@ -206,6 +235,7 @@ Browser cookie sources:
 - Safari: `~/Library/Cookies/Cookies.binarycookies` (fallback: `~/Library/Containers/com.apple.Safari/Data/Library/Cookies/Cookies.binarycookies`)
 - Chrome: `~/Library/Application Support/Google/Chrome/<Profile>/Cookies`
 - Firefox: `~/Library/Application Support/Firefox/Profiles/<profile>/cookies.sqlite`
+  - For Chromium variants (Arc/Brave/etc), pass a profile directory or cookie DB via `--chrome-profile-dir`.
 
 ## Config (JSON5)
 
@@ -220,6 +250,7 @@ Example `~/.config/bird/config.json5`:
 {
   // Cookie source order for browser extraction (string or array)
   cookieSource: ["firefox", "safari"],
+  chromeProfileDir: "/path/to/Chromium/Profile",
   firefoxProfile: "default-release",
   cookieTimeoutMs: 30000,
   timeoutMs: 20000,

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { registerBookmarksCommand } from '../commands/bookmarks.js';
 import { registerCheckCommand } from '../commands/check.js';
+import { registerFollowCommands } from '../commands/follow.js';
 import { registerHelpCommand } from '../commands/help.js';
 import { registerHomeCommand } from '../commands/home.js';
 import { registerListsCommand } from '../commands/lists.js';
@@ -27,6 +28,8 @@ export const KNOWN_COMMANDS = new Set([
   'mentions',
   'bookmarks',
   'unbookmark',
+  'follow',
+  'unfollow',
   'following',
   'followers',
   'likes',
@@ -95,7 +98,7 @@ export function createProgram(ctx: CliContext): Command {
       ].join('\n\n')}\n\n${ctx.colors.section('Shortcuts')}\n${[
         formatExample('bird <tweet-id-or-url> [--json]', 'Shorthand for `bird read <tweet-id-or-url>`'),
       ].join('\n\n')}\n\n${ctx.colors.section('JSON Output')}\n${ctx.colors.muted(
-        `  Add ${ctx.colors.option('--json')} to: read, replies, thread, search, mentions, bookmarks, likes, following, followers, lists, list-timeline, user-tweets, query-ids`,
+        `  Add ${ctx.colors.option('--json')} to: read, replies, thread, search, mentions, bookmarks, likes, following, followers, about, lists, list-timeline, user-tweets, query-ids`,
       )}\n${ctx.colors.muted(
         `  Add ${ctx.colors.option('--json-full')} to include raw API response in ${ctx.colors.argument('_raw')} field (tweet commands only)`,
       )}\n${ctx.colors.muted(`  (Run ${ctx.colors.command('bird <command> --help')} to see per-command flags.)`)}`,
@@ -107,7 +110,7 @@ export function createProgram(ctx: CliContext): Command {
       `\n\n${ctx.colors.section('Config')}\n${ctx.colors.muted(
         `  Reads ${ctx.colors.argument('~/.config/bird/config.json5')} and ${ctx.colors.argument('./.birdrc.json5')} (JSON5)`,
       )}\n${ctx.colors.muted(
-        `  Supports: chromeProfile, firefoxProfile, cookieSource, cookieTimeoutMs, timeoutMs, quoteDepth, cookieCloud, rss`,
+        `  Supports: chromeProfile, chromeProfileDir, firefoxProfile, cookieSource, cookieTimeoutMs, timeoutMs, quoteDepth, cookieCloud, rss`,
       )}\n${ctx.colors.muted(
         `  Example cookieCloud: { "url": "https://...", "uuid": "...", "password": "..." }`,
       )}\n\n${ctx.colors.section('Env')}\n${ctx.colors.muted(
@@ -119,6 +122,11 @@ export function createProgram(ctx: CliContext): Command {
     .option('--auth-token <token>', 'Twitter auth_token cookie')
     .option('--ct0 <token>', 'Twitter ct0 cookie')
     .option('--chrome-profile <name>', 'Chrome profile name for cookie extraction', ctx.config.chromeProfile)
+    .option(
+      '--chrome-profile-dir <path>',
+      'Chrome/Chromium profile directory or cookie DB path for cookie extraction',
+      ctx.config.chromeProfileDir,
+    )
     .option('--firefox-profile <name>', 'Firefox profile name for cookie extraction', ctx.config.firefoxProfile)
     .option('--cookie-timeout <ms>', 'Cookie extraction timeout in milliseconds (keychain/OS helpers)')
     .option('--cookie-source <source>', 'Cookie source for browser cookie extraction (repeatable)', collectCookieSource)
@@ -144,6 +152,7 @@ export function createProgram(ctx: CliContext): Command {
   registerSearchCommands(program, ctx);
   registerBookmarksCommand(program, ctx);
   registerUnbookmarkCommand(program, ctx);
+  registerFollowCommands(program, ctx);
   registerListsCommand(program, ctx);
   registerHomeCommand(program, ctx);
   registerUserCommands(program, ctx);

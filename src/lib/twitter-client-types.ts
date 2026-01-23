@@ -230,6 +230,17 @@ export type BookmarkMutationResult =
       error: string;
     };
 
+export type FollowMutationResult =
+  | {
+      success: true;
+      userId?: string;
+      username?: string;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
 export interface UploadMediaResult {
   success: boolean;
   mediaId?: string;
@@ -273,6 +284,13 @@ export interface TweetData {
   };
   // Raw GraphQL tweet result (only when includeRaw is enabled)
   _raw?: GraphqlTweetResult;
+}
+
+export interface TweetWithMeta extends TweetData {
+  isThread: boolean;
+  threadPosition: 'root' | 'middle' | 'end' | 'standalone';
+  hasSelfReplies: boolean;
+  threadRootId: string | null;
 }
 
 export interface GetTweetResult {
@@ -324,6 +342,20 @@ export interface FollowingResult {
   error?: string;
   /** Cursor for fetching the next page of results */
   nextCursor?: string;
+}
+
+export interface AboutAccountProfile {
+  accountBasedIn?: string;
+  source?: string;
+  createdCountryAccurate?: boolean;
+  locationAccurate?: boolean;
+  learnMoreUrl?: string;
+}
+
+export interface AboutAccountResult {
+  success: boolean;
+  aboutProfile?: AboutAccountProfile;
+  error?: string;
 }
 
 export interface TwitterClientOptions {

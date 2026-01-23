@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { Command } from 'commander';
 import JSON5 from 'json5';
 import kleur from 'kleur';
+import type { CookieCloudConfig } from '../lib/cookiecloud.js';
 import { type CookieSource, resolveCredentials } from '../lib/cookies.js';
 import { extractTweetId } from '../lib/extract-tweet-id.js';
 import {
@@ -23,6 +24,17 @@ export type BirdConfig = {
   cookieTimeoutMs?: number;
   timeoutMs?: number;
   quoteDepth?: number;
+  cookieCloud?: CookieCloudConfig;
+  rss?: {
+    outputDir?: string;
+    feeds?: Array<{
+      name: string;
+      handle: string;
+      count?: number;
+      title?: string;
+      description?: string;
+    }>;
+  };
 };
 
 export type MediaSpec = { path: string; alt?: string; mime: string; buffer: Buffer };
@@ -69,10 +81,10 @@ const COOKIE_SOURCES: CookieSource[] = ['safari', 'chrome', 'firefox'];
 
 function parseCookieSource(value: string): CookieSource {
   const normalized = value.trim().toLowerCase();
-  if (normalized === 'safari' || normalized === 'chrome' || normalized === 'firefox') {
+  if (normalized === 'safari' || normalized === 'chrome' || normalized === 'firefox' || normalized === 'cookiecloud') {
     return normalized;
   }
-  throw new Error(`Invalid --cookie-source "${value}". Allowed: safari, chrome, firefox.`);
+  throw new Error(`Invalid --cookie-source "${value}". Allowed: safari, chrome, firefox, cookiecloud.`);
 }
 
 export const collectCookieSource = (value: string, previous: CookieSource[] = []): CookieSource[] => {
@@ -177,6 +189,9 @@ type CredentialsOptions = {
   firefoxProfile?: string;
   cookieSource?: CookieSource[];
   cookieTimeout?: string | number;
+  cookieCloudUrl?: string;
+  cookieCloudUuid?: string;
+  cookieCloudPassword?: string;
 };
 
 export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEnv = process.env): CliContext {
@@ -280,6 +295,17 @@ export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEn
     const cookieSource = opts.cookieSource?.length
       ? opts.cookieSource
       : (resolveCookieSourceOrder(config.cookieSource) ?? COOKIE_SOURCES);
+
+    // Build CookieCloud config from CLI args or config file
+    let cookieCloud: CookieCloudConfig | undefined;
+    const ccUrl = opts.cookieCloudUrl || config.cookieCloud?.url;
+    const ccUuid = opts.cookieCloudUuid || config.cookieCloud?.uuid;
+    const ccPassword = opts.cookieCloudPassword || config.cookieCloud?.password;
+
+    if (ccUrl && ccUuid && ccPassword) {
+      cookieCloud = { url: ccUrl, uuid: ccUuid, password: ccPassword };
+    }
+
     return resolveCredentials({
       authToken: opts.authToken,
       ct0: opts.ct0,
@@ -287,6 +313,7 @@ export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEn
       chromeProfile: opts.chromeProfile || config.chromeProfile,
       firefoxProfile: opts.firefoxProfile || config.firefoxProfile,
       cookieTimeoutMs: resolveCookieTimeoutFromOptions(opts),
+      cookieCloud,
     });
   }
 

@@ -8,6 +8,7 @@ import { registerNewsCommand } from '../commands/news.js';
 import { registerPostCommands } from '../commands/post.js';
 import { registerQueryIdsCommand } from '../commands/query-ids.js';
 import { registerReadCommands } from '../commands/read.js';
+import { registerRssCommand } from '../commands/rss.js';
 import { registerSearchCommands } from '../commands/search.js';
 import { registerUnbookmarkCommand } from '../commands/unbookmark.js';
 import { registerUserTweetsCommand } from '../commands/user-tweets.js';
@@ -33,6 +34,7 @@ export const KNOWN_COMMANDS = new Set([
   'list-timeline',
   'home',
   'user-tweets',
+  'rss',
   'news',
   'trending',
   'help',
@@ -105,7 +107,9 @@ export function createProgram(ctx: CliContext): Command {
       `\n\n${ctx.colors.section('Config')}\n${ctx.colors.muted(
         `  Reads ${ctx.colors.argument('~/.config/bird/config.json5')} and ${ctx.colors.argument('./.birdrc.json5')} (JSON5)`,
       )}\n${ctx.colors.muted(
-        `  Supports: chromeProfile, firefoxProfile, cookieSource, cookieTimeoutMs, timeoutMs, quoteDepth`,
+        `  Supports: chromeProfile, firefoxProfile, cookieSource, cookieTimeoutMs, timeoutMs, quoteDepth, cookieCloud, rss`,
+      )}\n${ctx.colors.muted(
+        `  Example cookieCloud: { "url": "https://...", "uuid": "...", "password": "..." }`,
       )}\n\n${ctx.colors.section('Env')}\n${ctx.colors.muted(
         `  ${ctx.colors.option('NO_COLOR')}, ${ctx.colors.option('BIRD_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_COOKIE_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_QUOTE_DEPTH')}`,
       )}`,
@@ -118,6 +122,9 @@ export function createProgram(ctx: CliContext): Command {
     .option('--firefox-profile <name>', 'Firefox profile name for cookie extraction', ctx.config.firefoxProfile)
     .option('--cookie-timeout <ms>', 'Cookie extraction timeout in milliseconds (keychain/OS helpers)')
     .option('--cookie-source <source>', 'Cookie source for browser cookie extraction (repeatable)', collectCookieSource)
+    .option('--cookie-cloud-url <url>', 'CookieCloud server URL')
+    .option('--cookie-cloud-uuid <uuid>', 'CookieCloud UUID')
+    .option('--cookie-cloud-password <password>', 'CookieCloud password')
     .option('--media <path>', 'Attach media file (repeatable, up to 4 images or 1 video)', collect)
     .option('--alt <text>', 'Alt text for the corresponding --media (repeatable)', collect)
     .option('--timeout <ms>', 'Request timeout in milliseconds')
@@ -141,6 +148,7 @@ export function createProgram(ctx: CliContext): Command {
   registerHomeCommand(program, ctx);
   registerUserCommands(program, ctx);
   registerUserTweetsCommand(program, ctx);
+  registerRssCommand(program, ctx);
   registerNewsCommand(program, ctx);
   registerCheckCommand(program, ctx);
 

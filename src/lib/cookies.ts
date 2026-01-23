@@ -4,6 +4,7 @@
  */
 
 import { getCookies } from '@steipete/sweet-cookie';
+import { type CookieCloudConfig, extractTwitterCookies, fetchCookieCloudData } from './cookiecloud.js';
 
 export interface TwitterCookies {
   authToken: string | null;
@@ -17,7 +18,7 @@ export interface CookieExtractionResult {
   warnings: string[];
 }
 
-export type CookieSource = 'safari' | 'chrome' | 'firefox';
+export type CookieSource = 'safari' | 'chrome' | 'firefox' | 'cookiecloud';
 
 const TWITTER_COOKIE_NAMES = ['auth_token', 'ct0'] as const;
 const TWITTER_URL = 'https://x.com/';
@@ -74,7 +75,10 @@ function labelForSource(source: CookieSource, profile?: string): string {
   if (source === 'chrome') {
     return profile ? `Chrome profile "${profile}"` : 'Chrome default profile';
   }
-  return profile ? `Firefox profile "${profile}"` : 'Firefox default profile';
+  if (source === 'firefox') {
+    return profile ? `Firefox profile "${profile}"` : 'Firefox default profile';
+  }
+  return 'CookieCloud';
 }
 
 function pickCookieValue(
@@ -100,7 +104,7 @@ function pickCookieValue(
 }
 
 async function readTwitterCookiesFromBrowser(options: {
-  source: CookieSource;
+  source: Exclude<CookieSource, 'cookiecloud'>;
   chromeProfile?: string;
   firefoxProfile?: string;
   cookieTimeoutMs?: number;
@@ -164,8 +168,42 @@ export async function extractCookiesFromFirefox(profile?: string): Promise<Cooki
 }
 
 /**
+ * Extract Twitter cookies from CookieCloud.
+ */
+export async function extractCookiesFromCookieCloud(config: CookieCloudConfig): Promise<CookieExtractionResult> {
+  const warnings: string[] = [];
+  const out = buildEmpty();
+
+  try {
+    const data = await fetchCookieCloudData(config);
+    const { authToken, ct0 } = extractTwitterCookies(data);
+
+    if (authToken) {
+      out.authToken = authToken;
+    }
+    if (ct0) {
+      out.ct0 = ct0;
+    }
+
+    if (out.authToken && out.ct0) {
+      out.cookieHeader = cookieHeader(out.authToken, out.ct0);
+      out.source = 'CookieCloud';
+      return { cookies: out, warnings };
+    }
+
+    warnings.push(
+      'No Twitter cookies found in CookieCloud data. Make sure you are logged into x.com in a synced browser.',
+    );
+  } catch (error) {
+    warnings.push(`Failed to fetch from CookieCloud: ${error instanceof Error ? error.message : String(error)}`);
+  }
+
+  return { cookies: out, warnings };
+}
+
+/**
  * Resolve Twitter credentials from multiple sources.
- * Priority: CLI args > environment variables > browsers (ordered).
+ * Priority: CLI args > environment variables > CookieCloud > browsers (ordered).
  */
 export async function resolveCredentials(options: {
   authToken?: string;
@@ -174,6 +212,7 @@ export async function resolveCredentials(options: {
   chromeProfile?: string;
   firefoxProfile?: string;
   cookieTimeoutMs?: number;
+  cookieCloud?: CookieCloudConfig;
 }): Promise<CookieExtractionResult> {
   const warnings: string[] = [];
   const cookies = buildEmpty();
@@ -205,8 +244,21 @@ export async function resolveCredentials(options: {
     return { cookies, warnings };
   }
 
+  // Try CookieCloud if configured
+  if (options.cookieCloud) {
+    const res = await extractCookiesFromCookieCloud(options.cookieCloud);
+    warnings.push(...res.warnings);
+    if (res.cookies.authToken && res.cookies.ct0) {
+      return { cookies: res.cookies, warnings };
+    }
+  }
+
   const sourcesToTry = resolveSources(options.cookieSource);
   for (const source of sourcesToTry) {
+    if (source === 'cookiecloud') {
+      // Skip cookiecloud in browser sources - already handled above
+      continue;
+    }
     const res = await readTwitterCookiesFromBrowser({
       source,
       chromeProfile: options.chromeProfile,

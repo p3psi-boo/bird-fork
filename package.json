@@ -37,6 +37,7 @@
   "dependencies": {
     "@steipete/sweet-cookie": "0.1.0",
     "commander": "^14.0.2",
+    "feedsmith": "^2.9.0",
     "json5": "^2.2.3",
     "kleur": "^4.1.5"
   },

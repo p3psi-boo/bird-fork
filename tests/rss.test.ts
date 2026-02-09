@@ -6,7 +6,7 @@ const PHOTO_ENCLOSURE = /<enclosure[^>]+url="https:\/\/example\.com\/a\.jpg"/;
 const VIDEO_ENCLOSURE = /<enclosure[^>]+url="https:\/\/example\.com\/v\.mp4"/;
 
 describe('renderUserTweetsRssXml', () => {
-  it('sorts tweets by createdAt desc and includes media HTML', () => {
+  it('sorts tweets by createdAt desc and includes media HTML', async () => {
     const tweets: TweetData[] = [
       {
         id: '1',
@@ -31,7 +31,7 @@ describe('renderUserTweetsRssXml', () => {
       },
     ];
 
-    const xml = renderUserTweetsRssXml({
+    const xml = await renderUserTweetsRssXml({
       handle: 'alice',
       title: '@alice tweets',
       description: 'Latest tweets from @alice',

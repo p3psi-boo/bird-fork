@@ -1,4 +1,3 @@
-import { generateRssFeed } from 'feedsmith';
 import type { Rss } from 'feedsmith/types';
 import type { TweetData } from './twitter-client.js';
 
@@ -98,12 +97,12 @@ function tweetEnclosures(tweet: TweetData): Rss.Enclosure[] | undefined {
   return [{ url, type, length: 0 }];
 }
 
-export function renderUserTweetsRssXml(opts: {
+export async function renderUserTweetsRssXml(opts: {
   handle: string;
   title: string;
   description: string;
   tweets: TweetData[];
-}): string {
+}): Promise<string> {
   const tweets = [...opts.tweets].sort((a, b) => {
     const ad = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const bd = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -128,5 +127,6 @@ export function renderUserTweetsRssXml(opts: {
     })),
   };
 
+  const { generateRssFeed } = await import('feedsmith');
   return generateRssFeed(feed);
 }

@@ -5,6 +5,13 @@
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "bird": "dist/cli.js"
   },
@@ -15,15 +22,20 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "pnpm run build:dist && pnpm run build:binary",
-    "build:dist": "tsc && node scripts/copy-dist-assets.js",
+    "build": "pnpm run build:js && pnpm run build:types && pnpm run build:assets && pnpm run build:binary",
+    "build:js": "tsup",
+    "build:types": "tsc -p tsconfig.types.json",
+    "build:assets": "node scripts/copy-dist-assets.js",
+    "build:dist": "pnpm run build:js && pnpm run build:types && pnpm run build:assets",
     "build:binary": "BIRD_VERSION=$(node -p \"require('./package.json').version\") BIRD_GIT_SHA=$(git rev-parse --short=8 HEAD 2>/dev/null || true) bun build --compile --minify --env=BIRD_* src/cli.ts --outfile bird",
     "dev": "tsx src/index.ts",
     "bird": "pnpm run build:dist && node dist/cli.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:cov": "vitest run --coverage",
     "test:live": "pnpm run build:dist && BIRD_LIVE=1 vitest run --no-file-parallelism tests/live/live.test.ts",
     "test:live:all": "pnpm run build:dist && BIRD_LIVE=1 vitest run --no-file-parallelism tests/live/live-all.test.ts",
+    "typecheck": "tsc --noEmit",
     "lint": "pnpm run lint:biome && pnpm run lint:oxlint",
     "lint:biome": "biome check .",
     "lint:oxlint": "oxlint --type-aware --tsconfig tsconfig.oxlint.json --import-plugin --node-plugin --vitest-plugin --deny-warnings src tests scripts",
@@ -52,6 +64,7 @@
     "@vitest/coverage-v8": "4.0.16",
     "oxlint": "^1.36.0",
     "oxlint-tsgolint": "^0.10.0",
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.0.16"

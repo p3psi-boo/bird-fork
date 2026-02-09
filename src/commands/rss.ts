@@ -115,7 +115,7 @@ export function registerRssCommand(program: Command, ctx: CliContext): void {
 
         const title = feed.title ?? `@${handle} tweets`;
         const description = feed.description ?? `Latest tweets from @${handle}`;
-        const xml = renderUserTweetsRssXml({ handle, title, description, tweets });
+        const xml = await renderUserTweetsRssXml({ handle, title, description, tweets });
 
         const outPath = join(outputDir, `${feed.name}.rss.xml`);
         writeFileSync(outPath, xml);

@@ -27,22 +27,55 @@ export interface CookieCloudData {
 }
 
 /**
- * Generate encryption key from UUID and password.
- * Uses MD5 hash of concatenated uuid-password string.
+ * Generate the same passphrase used in CookieCloud's CryptoJS example:
+ * MD5(uuid-password) as hex, truncated to 16 chars.
  */
-function generateKey(uuid: string, password: string): Buffer {
+function generatePassphrase(uuid: string, password: string): string {
   const keyString = `${uuid}-${password}`;
-  return createHash('md5').update(keyString).digest();
+  return createHash('md5').update(keyString).digest('hex').substring(0, 16);
 }
 
 /**
- * Decrypt CookieCloud data using AES-128-CBC.
+ * Reproduce CryptoJS/OpenSSL EVP_BytesToKey derivation (MD5, 1 iteration)
+ * used by CryptoJS when decrypting with a passphrase string.
  */
-function decryptData(encryptedData: string, key: Buffer): string {
+function evpBytesToKey(passphrase: string, salt: Buffer): { key: Buffer; iv: Buffer } {
+  const password = Buffer.from(passphrase, 'utf8');
+  const targetLength = 32 + 16; // AES-256 key + CBC IV
+  let derived = Buffer.alloc(0);
+  let block = Buffer.alloc(0);
+
+  while (derived.length < targetLength) {
+    block = createHash('md5')
+      .update(Buffer.concat([block, password, salt]))
+      .digest();
+    derived = Buffer.concat([derived, block]);
+  }
+
+  return {
+    key: derived.subarray(0, 32),
+    iv: derived.subarray(32, 48),
+  };
+}
+
+/**
+ * Decrypt CookieCloud data with CryptoJS-compatible passphrase mode.
+ */
+function decryptData(encryptedData: string, passphrase: string): string {
   try {
-    // CookieCloud uses the key as both key and IV
-    const decipher = createDecipheriv('aes-128-cbc', key, key);
-    let decrypted = decipher.update(encryptedData, 'base64', 'utf8');
+    const payload = Buffer.from(encryptedData, 'base64');
+
+    // CryptoJS OpenSSL formatter prepends "Salted__" + 8-byte salt.
+    if (payload.length < 16 || payload.subarray(0, 8).toString('utf8') !== 'Salted__') {
+      throw new Error('Invalid CryptoJS/OpenSSL payload format');
+    }
+
+    const salt = payload.subarray(8, 16);
+    const ciphertext = payload.subarray(16);
+    const { key, iv } = evpBytesToKey(passphrase, salt);
+
+    const decipher = createDecipheriv('aes-256-cbc', key, iv);
+    let decrypted = decipher.update(ciphertext, undefined, 'utf8');
     decrypted += decipher.final('utf8');
     return decrypted;
   } catch (error) {
@@ -83,9 +116,9 @@ export async function fetchCookieCloudData(config: CookieCloudConfig): Promise<C
       throw new Error('No encrypted data in CookieCloud response');
     }
 
-    // Generate decryption key and decrypt
-    const key = generateKey(uuid, password);
-    const decryptedJson = decryptData(result.encrypted, key);
+    // Generate CryptoJS passphrase and decrypt
+    const passphrase = generatePassphrase(uuid, password);
+    const decryptedJson = decryptData(result.encrypted, passphrase);
     const data = JSON.parse(decryptedJson) as CookieCloudData;
 
     return data;

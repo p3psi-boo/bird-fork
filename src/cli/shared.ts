@@ -21,16 +21,6 @@ export type BirdConfig = {
   timeoutMs?: number;
   quoteDepth?: number;
   cookieCloud?: CookieCloudConfig;
-  rss?: {
-    outputDir?: string;
-    feeds?: Array<{
-      name: string;
-      handle: string;
-      count?: number;
-      title?: string;
-      description?: string;
-    }>;
-  };
 };
 
 export type MediaSpec = { path: string; alt?: string; mime: string; buffer: Buffer };

@@ -9,7 +9,6 @@ import { registerNewsCommand } from '../commands/news.js';
 import { registerPostCommands } from '../commands/post.js';
 import { registerQueryIdsCommand } from '../commands/query-ids.js';
 import { registerReadCommands } from '../commands/read.js';
-import { registerRssCommand } from '../commands/rss.js';
 import { registerSearchCommands } from '../commands/search.js';
 import { registerUnbookmarkCommand } from '../commands/unbookmark.js';
 import { registerUserTweetsCommand } from '../commands/user-tweets.js';
@@ -37,7 +36,6 @@ export const KNOWN_COMMANDS = new Set([
   'list-timeline',
   'home',
   'user-tweets',
-  'rss',
   'news',
   'trending',
   'help',
@@ -108,7 +106,7 @@ export function createProgram(ctx: CliContext): Command {
     () =>
       `\n\n${ctx.colors.section('Config')}\n${ctx.colors.muted(
         `  Reads ${ctx.colors.argument('~/.config/bird/config.json5')} and ${ctx.colors.argument('./.birdrc.json5')} (JSON5)`,
-      )}\n${ctx.colors.muted(`  Supports: timeoutMs, quoteDepth, cookieCloud, rss`)}\n${ctx.colors.muted(
+      )}\n${ctx.colors.muted(`  Supports: timeoutMs, quoteDepth, cookieCloud`)}\n${ctx.colors.muted(
         `  Example cookieCloud: { "url": "https://...", "uuid": "...", "password": "..." }`,
       )}\n\n${ctx.colors.section('Env')}\n${ctx.colors.muted(
         `  ${ctx.colors.option('NO_COLOR')}, ${ctx.colors.option('BIRD_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_QUOTE_DEPTH')}`,
@@ -145,7 +143,6 @@ export function createProgram(ctx: CliContext): Command {
   registerHomeCommand(program, ctx);
   registerUserCommands(program, ctx);
   registerUserTweetsCommand(program, ctx);
-  registerRssCommand(program, ctx);
   registerNewsCommand(program, ctx);
   registerCheckCommand(program, ctx);
 

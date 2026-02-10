@@ -15,7 +15,7 @@ export default defineConfig([
       js: '#!/usr/bin/env node',
     },
     external: ['@steipete/sweet-cookie'],
-    noExternal: ['commander', 'kleur', 'json5', 'feedsmith'],
+    noExternal: ['commander', 'kleur', 'json5'],
   },
   {
     entry: ['src/index.ts'],

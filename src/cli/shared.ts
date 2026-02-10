@@ -5,7 +5,7 @@ import type { Command } from 'commander';
 import JSON5 from 'json5';
 import kleur from 'kleur';
 import type { CookieCloudConfig } from '../lib/cookiecloud.js';
-import { type CookieSource, resolveCredentials } from '../lib/cookies.js';
+import { resolveCredentials } from '../lib/cookies.js';
 import { extractTweetId } from '../lib/extract-tweet-id.js';
 import {
   hyperlink,
@@ -18,11 +18,6 @@ import {
 import type { TweetData } from '../lib/twitter-client.js';
 
 export type BirdConfig = {
-  chromeProfile?: string;
-  chromeProfileDir?: string;
-  firefoxProfile?: string;
-  cookieSource?: CookieSource | CookieSource[];
-  cookieTimeoutMs?: number;
   timeoutMs?: number;
   quoteDepth?: number;
   cookieCloud?: CookieCloudConfig;
@@ -77,38 +72,6 @@ export type CliContext = {
   ) => void;
   extractTweetId: (tweetIdOrUrl: string) => string;
 };
-
-const COOKIE_SOURCES: CookieSource[] = ['safari', 'chrome', 'firefox'];
-
-function parseCookieSource(value: string): CookieSource {
-  const normalized = value.trim().toLowerCase();
-  if (normalized === 'safari' || normalized === 'chrome' || normalized === 'firefox' || normalized === 'cookiecloud') {
-    return normalized;
-  }
-  throw new Error(`Invalid --cookie-source "${value}". Allowed: safari, chrome, firefox, cookiecloud.`);
-}
-
-export const collectCookieSource = (value: string, previous: CookieSource[] = []): CookieSource[] => {
-  previous.push(parseCookieSource(value));
-  return previous;
-};
-
-function resolveCookieSourceOrder(input: unknown): CookieSource[] | undefined {
-  if (typeof input === 'string') {
-    return [parseCookieSource(input)];
-  }
-  if (Array.isArray(input)) {
-    const result: CookieSource[] = [];
-    for (const entry of input) {
-      if (typeof entry !== 'string') {
-        continue;
-      }
-      result.push(parseCookieSource(entry));
-    }
-    return result.length > 0 ? result : undefined;
-  }
-  return undefined;
-}
 
 function resolveTimeoutMs(...values: Array<string | number | undefined | null>): number | undefined {
   for (const value of values) {
@@ -186,11 +149,6 @@ function loadConfig(warn: (message: string) => void): BirdConfig {
 type CredentialsOptions = {
   authToken?: string;
   ct0?: string;
-  chromeProfile?: string;
-  chromeProfileDir?: string;
-  firefoxProfile?: string;
-  cookieSource?: CookieSource[];
-  cookieTimeout?: string | number;
   cookieCloudUrl?: string;
   cookieCloudUuid?: string;
   cookieCloudPassword?: string;
@@ -285,22 +243,11 @@ export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEn
     return resolveTimeoutMs(options.timeout, config.timeoutMs, env.BIRD_TIMEOUT_MS);
   }
 
-  function resolveCookieTimeoutFromOptions(options: { cookieTimeout?: string | number }): number | undefined {
-    return resolveTimeoutMs(options.cookieTimeout, config.cookieTimeoutMs, env.BIRD_COOKIE_TIMEOUT_MS);
-  }
-
   function resolveQuoteDepthFromOptions(options: { quoteDepth?: string | number }): number | undefined {
     return resolveQuoteDepth(options.quoteDepth, config.quoteDepth, env.BIRD_QUOTE_DEPTH);
   }
 
   function resolveCredentialsFromOptions(opts: CredentialsOptions): ReturnType<typeof resolveCredentials> {
-    const cookieSource = opts.cookieSource?.length
-      ? opts.cookieSource
-      : (resolveCookieSourceOrder(config.cookieSource) ?? COOKIE_SOURCES);
-
-    const chromeProfile =
-      opts.chromeProfileDir || opts.chromeProfile || config.chromeProfileDir || config.chromeProfile;
-
     // Build CookieCloud config from CLI args or config file
     let cookieCloud: CookieCloudConfig | undefined;
     const ccUrl = opts.cookieCloudUrl || config.cookieCloud?.url;
@@ -314,10 +261,6 @@ export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEn
     return resolveCredentials({
       authToken: opts.authToken,
       ct0: opts.ct0,
-      cookieSource,
-      chromeProfile,
-      firefoxProfile: opts.firefoxProfile || config.firefoxProfile,
-      cookieTimeoutMs: resolveCookieTimeoutFromOptions(opts),
       cookieCloud,
     });
   }

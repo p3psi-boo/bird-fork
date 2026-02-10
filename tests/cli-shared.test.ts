@@ -24,31 +24,43 @@ describe('cli shared', () => {
     resolveCredentialsMock.mockClear();
   });
 
-  it('prefers --chrome-profile-dir over --chrome-profile', async () => {
+  it('passes CookieCloud config to resolveCredentials', async () => {
     const ctx = createCliContext([]);
     await ctx.resolveCredentialsFromOptions({
-      chromeProfile: 'Default',
-      chromeProfileDir: '/tmp/Arc Profile',
-      cookieSource: ['chrome'],
+      cookieCloudUrl: 'https://cc.example.com',
+      cookieCloudUuid: 'test-uuid',
+      cookieCloudPassword: 'test-pass',
     });
 
     expect(resolveCredentialsMock).toHaveBeenCalledTimes(1);
-    expect(resolveCredentialsMock.mock.calls[0]?.[0]?.chromeProfile).toBe('/tmp/Arc Profile');
+    expect(resolveCredentialsMock.mock.calls[0]?.[0]?.cookieCloud).toEqual({
+      url: 'https://cc.example.com',
+      uuid: 'test-uuid',
+      password: 'test-pass',
+    });
   });
 
-  it('uses chromeProfileDir from config when provided', async () => {
+  it('uses cookieCloud from config when provided', async () => {
     const tempHome = mkdtempSync(join(tmpdir(), 'bird-home-'));
     const configDir = join(tempHome, '.config', 'bird');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, 'config.json5'), '{ chromeProfileDir: "/tmp/Brave/Profile 1" }', 'utf8');
+    writeFileSync(
+      join(configDir, 'config.json5'),
+      '{ cookieCloud: { url: "https://config.example.com", uuid: "config-uuid", password: "config-pass" } }',
+      'utf8',
+    );
     process.env.HOME = tempHome;
 
     try {
       const ctx = createCliContext([]);
-      await ctx.resolveCredentialsFromOptions({ cookieSource: ['chrome'] });
+      await ctx.resolveCredentialsFromOptions({});
 
       expect(resolveCredentialsMock).toHaveBeenCalledTimes(1);
-      expect(resolveCredentialsMock.mock.calls[0]?.[0]?.chromeProfile).toBe('/tmp/Brave/Profile 1');
+      expect(resolveCredentialsMock.mock.calls[0]?.[0]?.cookieCloud).toEqual({
+        url: 'https://config.example.com',
+        uuid: 'config-uuid',
+        password: 'config-pass',
+      });
     } finally {
       rmSync(tempHome, { recursive: true, force: true });
     }

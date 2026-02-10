@@ -1,9 +1,5 @@
 export {
   type CookieExtractionResult,
-  type CookieSource,
-  extractCookiesFromChrome,
-  extractCookiesFromFirefox,
-  extractCookiesFromSafari,
   resolveCredentials,
   type TwitterCookies,
 } from './cookies.js';

@@ -15,7 +15,7 @@ import { registerUnbookmarkCommand } from '../commands/unbookmark.js';
 import { registerUserTweetsCommand } from '../commands/user-tweets.js';
 import { registerUserCommands } from '../commands/users.js';
 import { getCliVersion } from '../lib/version.js';
-import { type CliContext, collectCookieSource } from './shared.js';
+import type { CliContext } from './shared.js';
 
 export const KNOWN_COMMANDS = new Set([
   'tweet',
@@ -88,8 +88,7 @@ export function createProgram(ctx: CliContext): Command {
     'afterAll',
     () =>
       `\n${ctx.colors.section('Examples')}\n${[
-        formatExample('bird whoami', 'Show the logged-in account via GraphQL cookies'),
-        formatExample('bird --firefox-profile default-release whoami', 'Use Firefox profile cookies'),
+        formatExample('bird whoami', 'Show the logged-in account via CookieCloud'),
         formatExample('bird tweet "hello from bird"', 'Send a tweet'),
         formatExample(
           'bird 1234567890123456789 --json',
@@ -109,27 +108,16 @@ export function createProgram(ctx: CliContext): Command {
     () =>
       `\n\n${ctx.colors.section('Config')}\n${ctx.colors.muted(
         `  Reads ${ctx.colors.argument('~/.config/bird/config.json5')} and ${ctx.colors.argument('./.birdrc.json5')} (JSON5)`,
-      )}\n${ctx.colors.muted(
-        `  Supports: chromeProfile, chromeProfileDir, firefoxProfile, cookieSource, cookieTimeoutMs, timeoutMs, quoteDepth, cookieCloud, rss`,
-      )}\n${ctx.colors.muted(
+      )}\n${ctx.colors.muted(`  Supports: timeoutMs, quoteDepth, cookieCloud, rss`)}\n${ctx.colors.muted(
         `  Example cookieCloud: { "url": "https://...", "uuid": "...", "password": "..." }`,
       )}\n\n${ctx.colors.section('Env')}\n${ctx.colors.muted(
-        `  ${ctx.colors.option('NO_COLOR')}, ${ctx.colors.option('BIRD_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_COOKIE_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_QUOTE_DEPTH')}`,
+        `  ${ctx.colors.option('NO_COLOR')}, ${ctx.colors.option('BIRD_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_QUOTE_DEPTH')}`,
       )}`,
   );
 
   program
     .option('--auth-token <token>', 'Twitter auth_token cookie')
     .option('--ct0 <token>', 'Twitter ct0 cookie')
-    .option('--chrome-profile <name>', 'Chrome profile name for cookie extraction', ctx.config.chromeProfile)
-    .option(
-      '--chrome-profile-dir <path>',
-      'Chrome/Chromium profile directory or cookie DB path for cookie extraction',
-      ctx.config.chromeProfileDir,
-    )
-    .option('--firefox-profile <name>', 'Firefox profile name for cookie extraction', ctx.config.firefoxProfile)
-    .option('--cookie-timeout <ms>', 'Cookie extraction timeout in milliseconds (keychain/OS helpers)')
-    .option('--cookie-source <source>', 'Cookie source for browser cookie extraction (repeatable)', collectCookieSource)
     .option('--cookie-cloud-url <url>', 'CookieCloud server URL')
     .option('--cookie-cloud-uuid <uuid>', 'CookieCloud UUID')
     .option('--cookie-cloud-password <password>', 'CookieCloud password')

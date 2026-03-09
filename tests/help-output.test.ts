@@ -45,10 +45,11 @@ describe('root help output', () => {
 
     cmd.outputHelp();
 
-    expect(help).toContain('--auth-token');
-    expect(help).toContain('--ct0');
     expect(help).toContain('--timeout');
     expect(help).toContain('--quote-depth');
+    expect(help).not.toContain('--auth-token');
+    expect(help).not.toContain('--ct0');
+    expect(help).not.toContain('--cookie-cloud-url');
   });
 
   it('shows --json-full option in read command help', () => {

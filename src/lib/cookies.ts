@@ -62,30 +62,16 @@ export async function extractCookiesFromCookieCloud(config: CookieCloudConfig): 
  * Resolve Twitter credentials from CookieCloud.
  */
 export async function resolveCredentials(options: {
-  authToken?: string;
-  ct0?: string;
   cookieCloud?: CookieCloudConfig;
 }): Promise<CookieExtractionResult> {
   const warnings: string[] = [];
 
-  // Direct token auth takes priority
-  if (options.authToken && options.ct0) {
-    return {
-      cookies: {
-        authToken: options.authToken,
-        ct0: options.ct0,
-        cookieHeader: cookieHeader(options.authToken, options.ct0),
-        source: 'CLI',
-      },
-      warnings,
-    };
-  }
-
-  // Try CookieCloud
   if (options.cookieCloud) {
     return extractCookiesFromCookieCloud(options.cookieCloud);
   }
 
-  warnings.push('No credentials provided. Use --auth-token/--ct0 or configure CookieCloud.');
+  warnings.push(
+    'No credentials configured. Add CookieCloud settings to ~/.config/bird/config.json5 or ./.birdrc.json5.',
+  );
   return { cookies: buildEmpty(), warnings };
 }

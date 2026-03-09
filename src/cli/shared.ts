@@ -136,13 +136,7 @@ function loadConfig(warn: (message: string) => void): BirdConfig {
   };
 }
 
-type CredentialsOptions = {
-  authToken?: string;
-  ct0?: string;
-  cookieCloudUrl?: string;
-  cookieCloudUuid?: string;
-  cookieCloudPassword?: string;
-};
+type CredentialsOptions = {};
 
 export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEnv = process.env): CliContext {
   const isTty = process.stdout.isTTY;
@@ -238,19 +232,16 @@ export function createCliContext(normalizedArgs: string[], env: NodeJS.ProcessEn
   }
 
   function resolveCredentialsFromOptions(opts: CredentialsOptions): ReturnType<typeof resolveCredentials> {
-    // Build CookieCloud config from CLI args or config file
     let cookieCloud: CookieCloudConfig | undefined;
-    const ccUrl = opts.cookieCloudUrl || config.cookieCloud?.url;
-    const ccUuid = opts.cookieCloudUuid || config.cookieCloud?.uuid;
-    const ccPassword = opts.cookieCloudPassword || config.cookieCloud?.password;
+    const ccUrl = config.cookieCloud?.url;
+    const ccUuid = config.cookieCloud?.uuid;
+    const ccPassword = config.cookieCloud?.password;
 
     if (ccUrl && ccUuid && ccPassword) {
       cookieCloud = { url: ccUrl, uuid: ccUuid, password: ccPassword };
     }
 
     return resolveCredentials({
-      authToken: opts.authToken,
-      ct0: opts.ct0,
       cookieCloud,
     });
   }

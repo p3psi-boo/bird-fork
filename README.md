@@ -33,7 +33,8 @@ brew install steipete/tap/bird
 bird whoami
 
 # Discover command help
-bird help whoami
+bird --help
+bird whoami --help
 
 # Read a tweet (URL or ID)
 bird read https://x.com/user/status/1234567890123456789
@@ -87,6 +88,35 @@ bird followers --user 12345678 -n 10  # by user ID
 bird query-ids --fresh
 ```
 
+## Discoverability & Automation
+
+`bird` now uses `incur` as the command entry, so the CLI has a better built-in discovery surface for both humans and agents:
+
+```bash
+# Top-level help
+bird --help
+
+# Command-specific help
+bird bookmarks --help
+
+# Agent-readable command manifest
+bird --llms
+bird --llms --format json
+
+# MCP server mode for agent tooling
+bird --mcp
+
+# Install generated integrations for supported agents
+bird mcp add
+bird skills add
+```
+
+Compatibility notes:
+
+- `bird <tweet-id-or-url>` still works as shorthand for `bird read <tweet-id-or-url>`.
+- `--json` keeps the existing raw JSON output behavior for data-fetching commands.
+- `--json-full` still includes `_raw` payloads where supported.
+
 ## News & Trending
 
 Fetch AI-curated news and trending topics from X's Explore page tabs:
@@ -130,7 +160,13 @@ By default, the command fetches from For You, News, Sports, and Entertainment ta
 ```ts
 import { TwitterClient, resolveCredentials } from '@steipete/bird';
 
-const { cookies } = await resolveCredentials({ cookieSource: 'safari' });
+const { cookies } = await resolveCredentials({
+  cookieCloud: {
+    url: 'https://cookiecloud.example.com',
+    uuid: 'your-uuid',
+    password: 'your-password'
+  }
+});
 const client = new TwitterClient({ cookies });
 
 // Search for tweets
@@ -167,7 +203,7 @@ Fields:
 
 - `bird tweet "<text>"` — post a new tweet.
 - `bird reply <tweet-id-or-url> "<text>"` — reply to a tweet using its ID or URL.
-- `bird help [command]` — show help (or help for a subcommand).
+- `bird help [command]` — show compatibility help; `bird <command> --help` is the preferred form.
 - `bird query-ids [--fresh] [--json]` — inspect or refresh cached GraphQL query IDs.
 - `bird home [-n count] [--following] [--json] [--json-full]` — fetch your home timeline (For You) or Following feed.
 - `bird read <tweet-id-or-url> [--json]` — fetch tweet content as text or JSON.
@@ -201,13 +237,6 @@ Bookmarks flags:
 - `--sort-chronological`: sort output globally oldest to newest (default preserves bookmark order).
 
 Global options:
-- `--auth-token <token>`: set the `auth_token` cookie manually.
-- `--ct0 <token>`: set the `ct0` cookie manually.
-- `--cookie-source <safari|chrome|firefox>`: choose browser cookie source (repeatable; order matters).
-- `--chrome-profile <name>`: Chrome profile name for cookie extraction (e.g., `Default`, `Profile 2`).
-- `--chrome-profile-dir <path>`: Chrome/Chromium profile directory or cookie DB path for cookie extraction.
-- `--firefox-profile <name>`: Firefox profile for cookie extraction.
-- `--cookie-timeout <ms>`: cookie extraction timeout for keychain/OS helpers (milliseconds).
 - `--timeout <ms>`: abort requests after the given timeout (milliseconds).
 - `--quote-depth <n>`: max quoted tweet depth in JSON output (default: 1; 0 disables).
 - `--plain`: stable output (no emoji, no color).
@@ -219,27 +248,20 @@ Global options:
 ## Authentication (GraphQL)
 
 GraphQL mode uses your existing X/Twitter web session (no password prompt). It sends requests to internal
-X endpoints and authenticates via cookies (`auth_token`, `ct0`).
+X endpoints and authenticates via cookies (`auth_token`, `ct0`) fetched from CookieCloud.
 
 Write operations:
 - `tweet`/`reply` primarily use GraphQL (`CreateTweet`).
 - If GraphQL returns error `226` (“automated request”), `bird` falls back to the legacy `statuses/update.json` endpoint.
 
-`bird` resolves credentials in this order:
+`bird` resolves credentials from CookieCloud configured in one of these files:
 
-1. CLI flags: `--auth-token`, `--ct0`
-2. Environment variables: `AUTH_TOKEN`, `CT0` (fallback: `TWITTER_AUTH_TOKEN`, `TWITTER_CT0`)
-3. Browser cookies via `@steipete/sweet-cookie` (override via `--cookie-source` order)
-
-Browser cookie sources:
-- Safari: `~/Library/Cookies/Cookies.binarycookies` (fallback: `~/Library/Containers/com.apple.Safari/Data/Library/Cookies/Cookies.binarycookies`)
-- Chrome: `~/Library/Application Support/Google/Chrome/<Profile>/Cookies`
-- Firefox: `~/Library/Application Support/Firefox/Profiles/<profile>/cookies.sqlite`
-  - For Chromium variants (Arc/Brave/etc), pass a profile directory or cookie DB via `--chrome-profile-dir`.
+1. Project config: `./.birdrc.json5`
+2. Global config: `~/.config/bird/config.json5`
 
 ## Config (JSON5)
 
-Config precedence: CLI flags > env vars > project config > global config.
+Config precedence: project config > global config.
 
 - Global: `~/.config/bird/config.json5`
 - Project: `./.birdrc.json5`
@@ -248,11 +270,11 @@ Example `~/.config/bird/config.json5`:
 
 ```json5
 {
-  // Cookie source order for browser extraction (string or array)
-  cookieSource: ["firefox", "safari"],
-  chromeProfileDir: "/path/to/Chromium/Profile",
-  firefoxProfile: "default-release",
-  cookieTimeoutMs: 30000,
+  cookieCloud: {
+    url: "https://cookiecloud.example.com",
+    uuid: "your-uuid",
+    password: "your-password"
+  },
   timeoutMs: 20000,
   quoteDepth: 1
 }
@@ -260,7 +282,6 @@ Example `~/.config/bird/config.json5`:
 
 Environment shortcuts:
 - `BIRD_TIMEOUT_MS`
-- `BIRD_COOKIE_TIMEOUT_MS`
 - `BIRD_QUOTE_DEPTH`
 
 ## Output
@@ -269,6 +290,7 @@ Environment shortcuts:
 - When using `--json` with pagination (`--all`, `--cursor`, `--max-pages`, or for `user-tweets` when `-n > 20`), output is `{ tweets, nextCursor }`.
 - `read` returns full text for Notes and Articles when present.
 - Use `--plain` for stable, script-friendly output (no emoji, no color).
+- `bird --llms` exposes an agent-readable command manifest without changing normal command behavior.
 
 ### JSON Schema
 

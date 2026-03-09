@@ -19,6 +19,7 @@ import type { CliContext } from './shared.js';
 export const KNOWN_COMMANDS = new Set([
   'tweet',
   'reply',
+  'about',
   'query-ids',
   'read',
   'replies',
@@ -106,19 +107,12 @@ export function createProgram(ctx: CliContext): Command {
     () =>
       `\n\n${ctx.colors.section('Config')}\n${ctx.colors.muted(
         `  Reads ${ctx.colors.argument('~/.config/bird/config.json5')} and ${ctx.colors.argument('./.birdrc.json5')} (JSON5)`,
-      )}\n${ctx.colors.muted(`  Supports: timeoutMs, quoteDepth, cookieCloud`)}\n${ctx.colors.muted(
-        `  Example cookieCloud: { "url": "https://...", "uuid": "...", "password": "..." }`,
-      )}\n\n${ctx.colors.section('Env')}\n${ctx.colors.muted(
+      )}\n${ctx.colors.muted(`  Supports: timeoutMs, quoteDepth`)}\n\n${ctx.colors.section('Env')}\n${ctx.colors.muted(
         `  ${ctx.colors.option('NO_COLOR')}, ${ctx.colors.option('BIRD_TIMEOUT_MS')}, ${ctx.colors.option('BIRD_QUOTE_DEPTH')}`,
       )}`,
   );
 
   program
-    .option('--auth-token <token>', 'Twitter auth_token cookie')
-    .option('--ct0 <token>', 'Twitter ct0 cookie')
-    .option('--cookie-cloud-url <url>', 'CookieCloud server URL')
-    .option('--cookie-cloud-uuid <uuid>', 'CookieCloud UUID')
-    .option('--cookie-cloud-password <password>', 'CookieCloud password')
     .option('--media <path>', 'Attach media file (repeatable, up to 4 images or 1 video)', collect)
     .option('--alt <text>', 'Alt text for the corresponding --media (repeatable)', collect)
     .option('--timeout <ms>', 'Request timeout in milliseconds')

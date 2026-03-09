@@ -24,20 +24,25 @@ describe('cli shared', () => {
     resolveCredentialsMock.mockClear();
   });
 
-  it('passes CookieCloud config to resolveCredentials', async () => {
-    const ctx = createCliContext([]);
-    await ctx.resolveCredentialsFromOptions({
-      cookieCloudUrl: 'https://cc.example.com',
-      cookieCloudUuid: 'test-uuid',
-      cookieCloudPassword: 'test-pass',
-    });
+  it('does not inject CookieCloud config when no config file exists', async () => {
+    const tempHome = mkdtempSync(join(tmpdir(), 'bird-home-'));
+    process.env.HOME = tempHome;
 
-    expect(resolveCredentialsMock).toHaveBeenCalledTimes(1);
-    expect(resolveCredentialsMock.mock.calls[0]?.[0]?.cookieCloud).toEqual({
-      url: 'https://cc.example.com',
-      uuid: 'test-uuid',
-      password: 'test-pass',
-    });
+    try {
+      const ctx = createCliContext([]);
+      await ctx.resolveCredentialsFromOptions({});
+
+      expect(resolveCredentialsMock).toHaveBeenCalledTimes(1);
+      const calls = resolveCredentialsMock.mock.calls as unknown as Array<
+        [{ cookieCloud?: { url: string; uuid: string; password: string } }]
+      >;
+      const options = calls[calls.length - 1]?.[0] as
+        | { cookieCloud?: { url: string; uuid: string; password: string } }
+        | undefined;
+      expect(options?.cookieCloud).toBeUndefined();
+    } finally {
+      rmSync(tempHome, { recursive: true, force: true });
+    }
   });
 
   it('uses cookieCloud from config when provided', async () => {
@@ -56,7 +61,13 @@ describe('cli shared', () => {
       await ctx.resolveCredentialsFromOptions({});
 
       expect(resolveCredentialsMock).toHaveBeenCalledTimes(1);
-      expect(resolveCredentialsMock.mock.calls[0]?.[0]?.cookieCloud).toEqual({
+      const calls = resolveCredentialsMock.mock.calls as unknown as Array<
+        [{ cookieCloud?: { url: string; uuid: string; password: string } }]
+      >;
+      const options = calls[calls.length - 1]?.[0] as
+        | { cookieCloud?: { url: string; uuid: string; password: string } }
+        | undefined;
+      expect(options?.cookieCloud).toEqual({
         url: 'https://config.example.com',
         uuid: 'config-uuid',
         password: 'config-pass',
